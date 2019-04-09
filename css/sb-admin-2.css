@@ -297,6 +297,13 @@ input[type="checkbox"] {
   padding: 0;
 }
 
+[type=checkbox]:after {
+    content: attr(value);
+    margin: -3px 15px;
+    vertical-align: top;
+    display: inline-block;
+}
+
 input[type="date"],
 input[type="time"],
 input[type="datetime-local"],
@@ -6991,7 +6998,7 @@ button.bg-dark:focus {
   background-color: #fff !important;
 }
 
-.bg-hds {
+.bg-ds {
     background-color: #a50a0e;
 }
 
@@ -11069,6 +11076,8 @@ a:focus {
 .sidebar {
   width: 6.5rem;
   min-height: 100vh;
+  background-size: 998px 1008px;
+  background-position: top center;
 }
 
 .sidebar .nav-item {
@@ -11998,4 +12007,13 @@ footer.sticky-footer .copyright {
 
 body.sidebar-toggled footer.sticky-footer {
   width: 100%;
+}
+
+span.ProfileImage{
+  cursor: pointer;
+}
+span.selected_ProfileImage {
+  border-width: 3px;
+  border-style: solid;
+  border-color: gray;
 }

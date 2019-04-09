@@ -15,179 +15,45 @@
 
 })();
 
-String.prototype.replaceAll = function(search, replacement) {
-    var target = this;
-    return target.replace(new RegExp(search, 'g'), replacement);
-};
-
-String.prototype.shorten = function(string, length){
-    if (typeof(length)!='number'){
-        length = 140;
-    }
-    var shortString = string.length > length ?
-        string.substring(0, length - 3) + "..." :
-        string.substring(0, length);
-
-    return shortString;
-};
-
-
-
 /**
- * Converts an object into a URL
- * @param datatosend just the object that has the API parameters
- * @return {String} A string containing the URL of the API to interact with
+ * For compatibility, we use getElementsByClassName
  */
-function ObjectToURL(datatosend)
-{
-    var ReturnString = getSiteURL() + 'api/';
-    if (typeof(datatosend['version'])==='undefined'){}
-    else
-    {
-        ReturnString+=datatosend['version']+ "/";
-    }
-    if (typeof(datatosend['api'])==='undefined'){}
-    else
-    {
-        ReturnString+=datatosend['api']+ "/";
-    }
-    if (typeof(datatosend['subversion'])==='undefined'){}
-    else
-    {
-        ReturnString+=datatosend['subversion']+ "/";
-    }
-    return ReturnString;
-}
-
-/**
- * Checks a response for success and then performs a callback
- * @param response
- * @param callback
- */
-function checkResponseForSuccess(response, callback) {
-    if (typeof(response.responseJSON)!='undefined'){
-        var obj = response.responseJSON;
-        if (typeof(obj.success)=='boolean'){
-            if (obj.success) {
-                if (typeof(callback)=='function'){
-                    callback(obj);
+(function() {
+    if (!document.getElementsByClassName) {
+        var indexOf = [].indexOf || function(prop) {
+            for (var i = 0; i < this.length; i++) {
+                if (this[i] === prop) return i;
+            }
+            return -1;
+        };
+        getElementsByClassName = function(className, context) {
+            var elems = document.querySelectorAll ? context.querySelectorAll("." + className) : (function() {
+                var all = context.getElementsByTagName("*"),
+                    elements = [],
+                    i = 0;
+                for (; i < all.length; i++) {
+                    if (all[i].className && (" " + all[i].className + " ").indexOf(" " + className + " ") > -1 && indexOf.call(elements, all[i]) === -1) elements.push(all[i]);
                 }
-            }
-        }
-    }
-}
+                return elements;
+            })();
+            return elems;
+        };
+        document.getElementsByClassName = function(className) {
+            return getElementsByClassName(className, document);
+        };
 
-var IsFetching = false;
-var responseVar = {};
-/**
- * Submits a call to the API
- * @param datatosend the data to send
- * @param callback a function
- */
-function jsonAPI(datatosend, callback)
-{
-    if (!IsFetching) {
-        IsFetching = true;
-        // Check for the api method
-        if (typeof(datatosend['apimethod'])==='string'){}
-        else
-        {
-            datatosend['apimethod'] = 'POST';
+        if(Element) {
+            Element.prototype.getElementsByClassName = function(className) {
+                return getElementsByClassName(className, this);
+            };
         }
-        // send the api key
-        if (typeof(datatosend['X-API-Key'])==='string'){}
-        else
-        {
-            datatosend['X-API-Key'] = getSiteDomain() + "-api-key";
-        }
-        // send the data type
-        if (typeof(datatosend['dataType'])==='string'){}
-        else
-        {
-            datatosend['dataType'] = 'json';
-        }
-        // restate each
-        for (var key in datatosend) {
-            var obj = datatosend[key];
-            if (typeof(datatosend[key])==='undefined') {
-                datatosend[key]=obj;
-            }
-        }
-        if (typeof(datatosend['api_url'])==='string'){}
-        else {
-            datatosend['api_url'] = ObjectToURL(datatosend);
-        }
-        // var stringToSend = window.JSON.stringify(datatosend);
-        var request = $.ajax({
-            url: datatosend['api_url'],
-            beforeSend: function (request) {
-                if (typeof(datatosend['X-API-Key'])!="undefined" &&  datatosend['X-API-Key']!=null) {
-                    request.setRequestHeader("X-API-Key", datatosend['X-API-Key']);
-                }
-                if (typeof(datatosend['X-Auth-Token'])!="undefined" && datatosend['X-Auth-Token']!=null) {
-                    request.setRequestHeader("X-Auth-Token", datatosend['X-Auth-Token']);
-                }
-            },
-            data: datatosend,
-            dataType: datatosend['dataType'], // must receive Content-Type:application/json done by render :json
-            processData: true,
-            type: datatosend['apimethod']
-        });
-        request.done(function(data) {
-            IsFetching = false;
-            if (data.responseJSON!=null) {
-                responseVar=clone(data.responseJSON);
-            }
-            else {
-                responseVar=clone(data);
-            }
-        });
-        request.fail(function(data)
-        {
-            IsFetching = false;
-            if (data.responseJSON!=null) {
-                responseVar=clone(data.responseJSON);
-            }
-            else {
-                responseVar=clone(data);
-            }
-            if (responseVar['success']==null) {
-                responseVar['success'] = false;
-            }
-            if (responseVar['message']==null) {
-                responseVar['message'] = "There was an error with the ajax request";
-            }
-        });
-        request.always(function(data)
-        {
-            IsFetching = false;
-            if (data.responseJSON!=null) {
-                responseVar=clone(data.responseJSON);
-            }
-            else {
-                responseVar=clone(data);
-            }
-            // run the callback function
-            if (typeof(callback)==='function') {
-                callback(responseVar);
-            }
-        });
-        request.then(function() {
-            IsFetching = false;
-        });
     }
-    else {
-        // wait a half second (500ms) before trying the api again
-        setTimeout(function() {
-            jsonAPI(datatosend, callback);
+})();
 
-        },500);
-    }
-}
 /**
  * This is a simple function makes json objects into strings if JSON libraries are not there
  */
-if(typeof(window.JSON)=='undefined') {
+if(typeof(window)!='undefined' && typeof(window.JSON)=='undefined') {
     window.JSON = {
         ConvertToJSON : function (obj, isArray) {
             if (typeof(isArray)!='boolean') {
@@ -251,132 +117,321 @@ if(typeof(window.JSON)=='undefined') {
     }
 }
 
-function clone(obj) {
-    // Handle the 3 simple types, and null or undefined
-    if (null == obj || typeof(obj)!="object") {
-        return obj;
-    }
 
-    // Handle Date
-    if (obj instanceof Date) {
-        var copy = new Date();
-        copy.setTime(obj.getTime());
-        return copy;
-    }
-
-    // Handle Array
-    if (obj instanceof Array) {
-        var copy = [];
-        for (var i = 0, len = obj.length; i < len; i++) {
-            copy[i] = clone(obj[i]);
-        }
-        return copy;
-    }
-
-    // Handle Object
-    if (obj instanceof Object) {
-        var copy = {};
-        for (var attr in obj) {
-            if (obj.hasOwnProperty(attr)) {
-                copy[attr] = clone(obj[attr]);
+if (!String.prototype.splitWord){
+    String.prototype.splitWord = function(word){
+        if (typeof(word)!="string") {return [this];}
+        var arr = [];
+        try {
+            var index = 1;
+            var str = this;
+            while (str.length > 0 && index >= 0) {
+                index = str.indexOf(word);
+                if (index >= 0){
+                    arr.push(str.slice(0, index));
+                    str = str.slice(index + word.length);
+                }
+            }
+            if (str.length > 0){
+                arr.push(str);
             }
         }
-        return copy;
-    }
-
-    console.log("Unable to copy obj! Its type isn't supported.");
-    console.log(obj);
+        catch (err){}
+        return arr;
+    };
 }
 
-/**
- * Gets the site url
- * @returns {string}, a string giving just the http://www.domain.com/
- */
-function getSiteURL(lastSlash) {
-    var Location = window.location.href.split("/");
-    var returnURL = "";
-    for (n=0; n<Location.length; n++) {
-        if (n<2) {
-            returnURL+= Location[n] + "/";
+if (!String.prototype.shorten){
+    String.prototype.shorten = function(length){
+        if (typeof(length)!='number'){
+            length = 140;
         }
-        else if (n==2) {
-            if (typeof(lastSlash)=='boolean') {
-                if (lastSlash) {
-                    returnURL+= Location[n] + "/";
+        var str = this;
+        if (str.length < length || length<4){return str;}
+        str = str.substring(0, length).trim();
+        var split = str.split(' ');
+        split.pop();
+        var str2 = split.join(' ');
+        if (str2.length < 1){return str + "...";}
+        var lst = str2[str2.length-1];
+        while (str2.length > 1 && (lst==';' || lst==','|| lst=='.' || lst=="\'" || lst=='"')){
+            str2 = str2.substring(0, str2.length-1).trim();
+            lst = str2[str2.length-1];
+        }
+        return str2 + "...";
+    };
+}
+// Define a contains method
+if (!String.prototype.contains){
+    String.prototype.contains = function(word){
+        return this.indexOf(word) > -1;
+    };
+}
+
+// Define a startsWith method
+if (!String.prototype.startsWith){
+    String.prototype.startsWith = function(word){
+        if (typeof(word)!="string") {return false;}
+        if (word.length > this.length){return false;}
+        return this.indexOf(word) == 0;
+    };
+}
+if (!String.prototype.combineWith){
+    String.prototype.combineWith = function(other, combinator){
+        if (typeof (other)!="string"){return this;}
+        if (typeof (combinator)!="string"){return this + other;}
+        var str = this;
+        if (str.endsWith(combinator) && other.startsWith(combinator)){
+            str = str + other.substr(combinator.length);
+        }
+        else if (!str.endsWith(combinator) && !other.startsWith(combinator)){
+            str = str + combinator + other;
+        } else {
+            str = str + other;
+        }
+        return str;
+    };
+}
+// Define a startsWith method
+if (!String.prototype.endsWith){
+    String.prototype.endsWith = function(word){
+        if (typeof(word)!="string") {return false;}
+        if (word.length > this.length){return false;}
+        var wl = word.length-1;
+        var tl = this.length-1;
+        for (var i = 0; i < word.length; i++){
+            var wc = word[wl-i];
+            var tc = this[tl-i];
+            if (wc != tc){return false;}
+        }
+        return true;
+    };
+}
+
+// Define a replaceAll method
+if (!String.prototype.replaceAll){
+    String.prototype.replaceAll = function(search, replacement) {
+        return this.splitWord(search).join(replacement);
+    };
+}
+if (!String.prototype.replaceAll){
+    String.prototype.replaceAll = function(search, replacement) {
+        var target = this;
+        return target.replace(new RegExp(search, 'g'), replacement);
+    };
+}
+
+if (!HTMLElement.prototype.addClass){
+    HTMLElement.prototype.addClass = function(name){
+        if (typeof(this.className)=="undefined"){
+            this.className = name;
+            return;
+        }
+        if (this.className.toString().split(" ").indexOf(name) == -1) {
+            this.className += " " + name;
+        }
+    };
+}
+if (!HTMLElement.prototype.hasClass){
+    HTMLElement.prototype.hasClass = function(name){
+        if (typeof(this.className)=="undefined"){
+            return;
+        }
+        if (typeof(name)!="string"){return false;}
+        return this.className.toString().split(" ").indexOf(name) >= 0;
+    };
+}
+if (!HTMLElement.prototype.removeClass){
+    HTMLElement.prototype.removeClass = function(name){
+        if (typeof(this.className)=="undefined"){
+            return;
+        }
+        this.className = this.className.toString().split(" ").filter(function(c){return c != name;}).join(" ");
+    };
+}
+if (!HTMLElement.prototype.selectProfileImage){
+    HTMLElement.prototype.selectProfileImage = function(){
+        var images = document.getElementsByClassName("ProfileImage");
+        for(var i = 0; i < images.length; i++){
+            images[i].removeClass("selected_ProfileImage");
+        }
+        this.addClass("selected_ProfileImage");
+    };
+}
+if (!HTMLElement.prototype.removeFromParent){
+    HTMLElement.prototype.removeFromParent = function(){
+        if (typeof(this.parentNode)  == "undefined") {return;}
+        this.parentNode.removeChild(this);
+    };
+}
+if (!HTMLElement.prototype.removeParent){
+    HTMLElement.prototype.removeParent = function(){
+        if (typeof(this.parentNode)  == "undefined") {return;}
+        this.parentNode.removeFromParent();
+    };
+}
+
+if (!HTMLElement.prototype.removeAllByClass){
+    HTMLElement.prototype.removeAllByClass = function(name){
+        var e = this.getElementsByClassName(name);
+        var l = e.length;
+        for (var i = 0; i < l; i++){
+            e[i].removeFromParent();
+        }
+    };
+}
+if (!HTMLElement.prototype.getElementById){
+    HTMLElement.prototype.getElementById = function(id){
+        if (typeof(this.children) != "object" && typeof(this.children.length) != "number"){return null;}
+        for(var i = 0; i < this.children.length; i++){
+            var c = this.children[i];
+            if (typeof(c.id)=="string" && c.id == id){return c;}
+            if (typeof(c.children) == "object" && typeof(c.children.length) == "number"){
+                var ch = c.getElementById(id);
+                if (ch!=null){return ch;}
+            }
+        }
+        return null;
+    };
+}
+if (!HTMLElement.prototype.backgroundUrl){
+    Object.defineProperties(HTMLElement.prototype, {
+        "backgroundUrl" : {
+            "get": function() {
+                if (this == null){return null;}
+                if (typeof(this.style)=="undefined"){
+                    return null;
                 }
-                else {
-                    returnURL+= Location[n];
+                if (typeof(this.style.backgroundImage)=="undefined"){
+                    return null;
                 }
+                var img = this.style.backgroundImage.toString();
+                if (img.indexOf("url(")==0){
+                    img = img.substr(5);
+                    img = img.substr(0, img.length-2);
+                }
+                return img;
+            },
+            "set": function(value) {
+                if (typeof(value)!="string"){return;}
+                if (typeof(this.style)=="undefined"){
+                    return;
+                }
+                if (value === null || value.trim() === ""){
+                    this.style.backgroundImage = null;
+                }
+                if (value.toLowerCase().indexOf("url(")===0){
+                    this.style.backgroundImage = value;
+                    return;
+                }
+                this.style.backgroundImage = "url('" + value + "')";
+            }
+        }
+    });
+}
+
+if (!HTMLElement.prototype.number){
+    Object.defineProperties(HTMLElement.prototype, {
+        "number" : {
+            "get": function() {
+                if (this == null){return NaN;}
+                if (typeof(this.getAttribute)!="function"){
+                    return NaN;
+                }
+                var number = this.getAttribute("number");
+                if (number == null){return NaN;}
+                try {
+                    return parseInt( number+ "");
+                }
+                catch (e) {
+
+                }
+                return NaN;
+            },
+            "set": function(value) {
+                if (this == null){return NaN;}
+                if (typeof(this.setAttribute)!="function"){
+                    return;
+                }
+                if (typeof(value)=="number"){
+                    this.setAttribute("number",value);
+                    return;
+                }
+                try {
+                    this.setAttribute("number",parseInt(value+""));
+                    return;
+                }
+                catch (e) {
+
+                }
+            }
+        }
+    });
+}
+
+if (!HTMLDocument.prototype.addScript){
+    HTMLDocument.prototype.addScript = function (url, callback) {
+        if (typeof(url)!="string"){return;}
+        if (typeof(document.scripts)!="undefined"){
+            for (var i = 0; i < document.scripts.length; i++){
+                if (document.scripts[i].outerHTML.contains(url)){
+                    if (typeof(callback) ==='function'){
+                        callback();
+                    }
+                    return;
+                }
+            }
+        }
+        var script  = this.createElement('script');
+        script.setAttribute("type","text/javascript");
+        script.setAttribute("src", url);
+        var head = this.getElementsByTagName('head')[0];
+        script.onload = script.onreadystatechange = function(){
+            if (!script.readyState || script.readyState === 'loaded' || script.readyState === 'complete'){
+                if (typeof(callback) ==='function'){
+                    callback();
+                }
+                script.onload = script.onreadystatechange = null;
             }
             else {
-                returnURL+= Location[n] + "/";
+                console.log(url + " could not be loaded...");
+            }
+        };
+        head.appendChild(script);
+    };
+}
+
+
+if (!HTMLDocument.prototype.addStyleSheet) {
+    HTMLDocument.prototype.addStyleSheet = function (url, callback) {
+        if (typeof(url)!="string"){return;}
+        if (typeof(document.styleSheets)!="undefined"){
+            for (var i = 0; i < document.styleSheets.length; i++){
+                if (document.styleSheets[i].href.contains(url)){
+                    if (typeof(callback) ==='function'){
+                        callback();
+                    }
+                    return;
+                }
             }
         }
-    }
-    return returnURL;
-}
-
-/**
- * Gets the domain of the site url
- * @returns {string}, a string giving just the www.domain.com of http://www.domain.com/something/else/
- */
-function getSiteDomain(URL) {
-    if (typeof(URL)!='string') {
-        URL = window.location.href;
-
-    }
-    var Location = URL.split("/");
-    var returnURL = "";
-    for (n=0; n<Location.length; n++) {
-        if (n==2) {
-            returnURL+= Location[n];
-        }
-    }
-    return returnURL;
-}
-
-/**
- * Gets the route of the site url
- * @returns {string}, a string giving just the something/else/of http://www.domain.com/something/else/
- */
-function getSiteRoute(URL) {
-    if (typeof(URL)!='string') {
-        URL = window.location.href;
-
-    }
-    var domain = getSiteDomain(URL);
-    var Location = URL.split(domain);
-    if (Location.length>1)
-    {
-        return Location[1];
-    }
-    return URL;
-}
-
-/**
- * Gets the route of the site url
- * @returns {string}, a string giving just the something/else/of http://www.domain.com/something/else/
- */
-function getSite(URL) {
-    if (typeof(URL)!='string') {
-        URL = window.location.href;
-
-    }
-    var domain = getSiteDomain(URL);
-    var Location = URL.split(domain);
-    if (Location.length>=1)
-    {
-        return Location[0] + domain;
-    }
-    return URL;
-}
-
-function getCurrentURLWithSlash() {
-    var site = window.location.href;
-    if (site[site.length-1]!='/') {
-        site += '/';
-    }
-    return site;
+        var sheet = document.createElement('link');
+        sheet.setAttribute("rel", "stylesheet");
+        // sheet.setAttribute("type", "text/css");
+        sheet.setAttribute("href", url);
+        var head = document.getElementsByTagName('head')[0];
+        sheet.onload = sheet.onreadystatechange = function () {
+            if (!sheet.readyState || sheet.readyState === 'loaded' || sheet.readyState === 'complete') {
+                if (typeof (callback) === 'function') {
+                    callback();
+                }
+                sheet.onload = sheet.onreadystatechange = null;
+            } else {
+                console.log(url + " could not be loaded...");
+            }
+        };
+        head.appendChild(sheet);
+    };
 }
 
 /**
@@ -439,91 +494,7 @@ function Interval(fn, time) {
     };
 }
 
-/**
- * Checks to see if the address passed is a valid email address
- * @param address a valid email address
- * @returns {boolean} true if an email address, false if otherwise
- */
-function isEmailAddress(address) {
-    // var filter= /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
-    var filter = /(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/;
-    if (filter.test(address)) {
-        return true;
-    }
-    return false;
-}
 
-
-/**
- * Centers an element in the window
- * @param callback -a function to run after
- * @returns {boolean} true if successful, false if otherwise
- */
-$.fn.centerInWindow = function(callback) {
-    var windowHeight = $(window).minMeasuredHeight();
-    var contentHeight = $(this).maxMeasuredHeight();
-    var newMarginTop = (windowHeight - contentHeight)/3.5;
-    if (newMarginTop>1) {
-        $(this).css('margin-top',newMarginTop+"px").promise().done(function(){
-            if (typeof(callback)=="function") {
-                callback();
-                return true;
-            }
-        });
-    } else {
-        $(this).css('margin-top','').promise().done(function(){
-            if (typeof(callback)=="function") {
-                callback();
-                return true;
-            }
-        });
-    }
-};
-
-/**
- * Centers an element in the parent
- * @param callback - a function to run after
- * @returns {boolean} true if successful, false if otherwise
- */
-$.fn.centerInParent = function(callback) {
-    if (this.length) {
-        var parent = $(this).parent();
-        if ( typeof(parent)=='undefined' || parent==null || $(parent).prop("tagName").toString().toLowerCase()=='body') {
-            parent = window;
-        }
-        var windowHeight = $(parent).minMeasuredHeight();
-        var contentHeight = this.maxMeasuredHeight();
-        var newMarginTop = (windowHeight - contentHeight)/3.5;
-        if (newMarginTop>1) {
-            $(this).css('margin-top',newMarginTop+"px").promise().done(function(){
-                if (typeof(callback)=="function") {
-                    callback();
-                    return true;
-                }
-            });
-        } else {
-            $(this).css('margin-top','').promise().done(function(){
-                if (typeof(callback)=="function") {
-                    callback();
-                    return true;
-                }
-            });
-        }
-    }
-};
-
-/**
- * Centers an element in the window
- * @param id -the id of the element
- * @param callback -a function to run after
- * @returns {boolean} true if successful, false if otherwise
- */
-function centerInWindow(id, callback) {
-    if (document.getElementById(id)==null) {
-        return false;
-    }
-    return $("#" + id).centerInWindow(callback);
-}
 
 if (typeof(backgroundImages)=="undefined"){
     var backgroundImages = {};
@@ -537,28 +508,6 @@ function processBackgroundImages() {
 function addBackgroundImageWithFade(element, image, callback) {
     $(element).addBackgroundImageWithFade(image, callback);
 }
-$.fn.addBackgroundImageWithFade = function(image, callback) {
-    var element = this;
-    $(element).css({
-        visibility: 'hidden',
-        opacity: 0
-    });
-    $('<img/>').attr('src', image).load(function() {
-        $(this).remove(); // prevent memory leaks
-        $(element).css('background-image', "url('"+image+"')").promise().done(function(){
-            $(element).css({
-                visibility: 'visible'
-            });
-            $(element).animate({
-                opacity: 1
-            }, 500);
-        });
-        if (typeof(callback)=="function") {
-            callback();
-        }
-    });
-};
-
 
 
 /**
@@ -692,144 +641,6 @@ function BackgroundImage(url, width, height, centerx, centery) {
     };
 }
 
-/**
- * Get the maximum measured height of the element
- * @returns the maximum measured height of the element
- */
-$.fn.maxMeasuredHeight = function() {
-    var height = $(this).height();
-    var tempHeight = $(this).outerHeight();
-    if (tempHeight>height) {
-        height = tempHeight;
-    }
-    tempHeight = $(this).innerHeight();
-    if (tempHeight>height) {
-        height = tempHeight;
-    }
-    return height;
-};
-
-/**
- * Get the minimum measured height of the element
- * @returns the minimum measured height of the element
- */
-$.fn.minMeasuredHeight = function() {
-    var height = $(this).height();
-    var tempHeight = $(this).outerHeight();
-    if (tempHeight<height) {
-        height = tempHeight;
-    }
-    tempHeight = $(this).innerHeight();
-    if (tempHeight<height) {
-        height = tempHeight;
-    }
-    return height;
-};
-
-/**
- * Get the maximum measured width of the element
- * @returns the maximum measured width of the element
- */
-$.fn.maxMeasuredWidth = function() {
-    var width = $(this).width();
-    var tempWidth = $(this).outerWidth();
-    if (tempWidth>width) {
-        width = tempWidth;
-    }
-    tempWidth = $(this).innerWidth();
-    if (tempWidth>width) {
-        width = tempWidth;
-    }
-    return width;
-};
-
-/**
- * Get the minimum measured width of the element
- * @returns the minimum measured width of the element
- */
-$.fn.minMeasuredWidth = function() {
-    var width = $(this).width();
-    var tempWidth = $(this).outerWidth();
-    if (tempWidth<width) {
-        width = tempWidth;
-    }
-    tempWidth = $(this).innerWidth();
-    if (tempWidth<width) {
-        width = tempWidth;
-    }
-    return width;
-};
-
-/**
- * This function uses jQuery to make a removal of a result look good.
- */
-$.fn.removeResult = function(callback) {
-    $(this).animate({opacity: '0'}, {
-        duration: 420,
-        complete: function () {
-            $(this).css('height',$(this).height()).promise().done(function(){
-                $(this).css('min-width','0').promise().done(function(){
-                    $(this).css('overflow-x','hidden').promise().done(function(){
-                        $(this).css('overflow-y','hidden').promise().done(function(){
-                            $(this).css('overflow','hidden').promise().done(function(){
-                                $(this).css('opacity', '0').promise().done(function(){
-                                    $(this).animate({width: '0px'}, {
-                                        duration: 260,
-                                        complete: function () {
-                                            $(this).remove().promise().done(function(){
-                                                if (typeof(callback)=='function') {
-                                                    callback();
-                                                }
-                                            });
-                                        }
-                                    });
-                                });
-                            });
-                        });
-                    });
-                });
-            });
-        }
-    });
-};
-
-/**
- * Makes the object the full height of the window
- * @param clip true to cut off the content, false by default to keep
- * @returns the new height
- */
-$.fn.makeWindowHeight = function(clip){
-    if (typeof(clip)!='boolean'){
-        clip = false;
-    }
-    var height = $(window).maxMeasuredHeight();
-    var sh = $(this).prop('scrollHeight');
-
-    // set the height to the scroll height
-    if (!clip && sh>height) {
-        height = sh;
-    }
-
-    $(this).height(height);
-    return height;
-};
-
-/**
- * Checks that it's not hidden
- * @returns true if .hide() was ran
- */
-$.fn.isNoneVisible = function(){
-    if (typeof(this)=='undefined') {
-        return false;
-    }
-    if (typeof($(this).css('display'))=='undefined') {
-        return false;
-    }
-    if ($(this).css('display').toString().toLowerCase() == 'none') {
-        return true;
-    }
-    return false;
-};
 
 /**
  * Organizes child elements using absolute positioning to form a "Pinterest" style board
@@ -1252,47 +1063,46 @@ function Modal() {
 }
 
 
-
-(function() {
-    if (!document.getElementsByClassName) {
-        var indexOf = [].indexOf || function(prop) {
-            for (var i = 0; i < this.length; i++) {
-                if (this[i] === prop) return i;
-            }
-            return -1;
-        };
-        getElementsByClassName = function(className, context) {
-            var elems = document.querySelectorAll ? context.querySelectorAll("." + className) : (function() {
-                var all = context.getElementsByTagName("*"),
-                    elements = [],
-                    i = 0;
-                for (; i < all.length; i++) {
-                    if (all[i].className && (" " + all[i].className + " ").indexOf(" " + className + " ") > -1 && indexOf.call(elements, all[i]) === -1) elements.push(all[i]);
-                }
-                return elements;
-            })();
-            return elems;
-        };
-        document.getElementsByClassName = function(className) {
-            return getElementsByClassName(className, document);
-        };
-
-        if(Element) {
-            Element.prototype.getElementsByClassName = function(className) {
-                return getElementsByClassName(className, this);
-            };
-        }
-    }
-})();
-
-
-
-
-
 function JSLib() {
     var context = this;
 
+    Object.defineProperties(context, {
+        "isJqueryLoaded" : {
+            "get": function() {
+                return !(typeof(jQuery) === 'undefined');
+            },
+            "set": function(value) {
+            }
+        }
+    });
+
+    context.load_jQuery = function(){
+        if (context.isJqueryLoaded) {return;}
+        document.addScript("vendor/jquery/jquery.min.js", function() {
+            if (context.isJqueryLoaded) {
+                console.log('Could not load jQuery');
+            }
+            else {
+                console.log('Automatically loaded jQuery');
+            }
+        });
+    };
+
+    /**
+     * Checks to see if the address passed is a valid email address
+     * @param address a valid email address
+     * @returns {boolean} true if an email address, false if otherwise
+     */
+    context.isEmailAddress = function(address) {
+        // var filter= /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+        var filter = /(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/;
+        if (filter.test(address)) {
+            return true;
+        }
+        return false;
+    };
     context.imageFadeInOnLoad = function () {
+        if (!context.isJqueryLoaded){return;}
         $('img').each(function(){
             if (!this.complete) {
                 $(this).css({
@@ -1309,6 +1119,90 @@ function JSLib() {
                 $(this).fadeIn();
             }
         });
+    };
+
+
+    /**
+     * Gets the site url
+     * @returns {string}, a string giving just the http://www.domain.com/
+     */
+    context.getSiteURL = function(lastSlash) {
+        var locations = window.location.href.split("/");
+        var returnURL = "";
+        for (n=0; n<locations.length; n++) {
+            if (n<2) {
+                returnURL+= locations[n] + "/";
+            }
+            else if (n==2) {
+                if (typeof(lastSlash)=='boolean') {
+                    if (lastSlash) {
+                        returnURL+= locations[n] + "/";
+                    }
+                    else {
+                        returnURL+= locations[n];
+                    }
+                }
+                else {
+                    returnURL+= locations[n] + "/";
+                }
+            }
+        }
+        return returnURL;
+    };
+
+    /**
+     * Gets the domain of the site url
+     * @returns {string}, a string giving just the www.domain.com of http://www.domain.com/something/else/
+     */
+    context.getSiteDomain = function(url) {
+        if (typeof(url)!='string') {
+            url = window.location.href;
+
+        }
+        var locations = url.split("/");
+        var returnURL = "";
+        for (n=0; n<locations.length; n++) {
+            if (n==2) {
+                returnURL += locations[n];
+            }
+        }
+        return returnURL;
+    };
+
+    /**
+     * Gets the route of the site url
+     * @returns {string}, a string giving just the something/else/of http://www.domain.com/something/else/
+     */
+     context.getSiteRoute = function(url) {
+        if (typeof(url)!='string') {
+            url = window.location.href;
+
+        }
+        var domain = context.getSiteDomain(url);
+        var location = url.split(domain);
+        if (location.length>1)
+        {
+            return location[1];
+        }
+        return url;
+    };
+
+    /**
+     * Gets the route of the site url
+     * @returns {string}, a string giving just the something/else/of http://www.domain.com/something/else/
+     */
+    context.getSite = function(url) {
+        if (typeof(url)!='string') {
+            url = window.location.href;
+
+        }
+        var domain = context.getSiteDomain(url);
+        var locations = url.split(domain);
+        if (locations.length>=1)
+        {
+            return locations[0] + domain;
+        }
+        return url;
     };
 
     context.mobileCheck = function () {
@@ -1342,6 +1236,8 @@ function JSLib() {
     };
 
     context.isMobileAgent = function () {
+        if (typeof(navigator)=="undefined"){return false;}
+        if (typeof(navigator.userAgent)=="undefined"){return false;}
         if( navigator.userAgent.match(/Android/i)
             || navigator.userAgent.match(/webOS/i)
             || navigator.userAgent.match(/iPhone/i)
@@ -1357,79 +1253,9 @@ function JSLib() {
         }
     };
 
-
-    /**
-     * Adds a javascript file to the head
-     * @param url, the url of the javascript file
-     * @param callback, a callback after the file is loaded
-     * @returns {boolean}, true if successful, false if otherwise
-     */
-    context.addScript = function (url, callback) {
-        var script  = document.createElement('script');
-        script.setAttribute("type","text/javascript");
-        script.setAttribute("src", url);
-        var head = document.getElementsByTagName('head')[0];
-        script.onload = script.onreadystatechange = function(){
-            if (!this.readyState || this.readyState == 'loaded' || this.readyState == 'complete'){
-                if (typeof(callback) ==='function'){
-                    callback();
-                }
-                script.onload = script.onreadystatechange = null;
-            }
-            return true;
-        };
-        head.appendChild(script);
-        return false;
-    };
-
-    /**
-     * Adds a style sheet to the head
-     * @param url, the url of the stylesheet
-     * @param callback, a callback after the sheet is loaded
-     * @returns {boolean}, true if successful, false if otherwise
-     */
-    context.addStyleSheet = function (url, callback) {
-        var sheet  = document.createElement('link');
-        sheet.setAttribute("rel", "stylesheet");
-        sheet.setAttribute("type", "text/css");
-        sheet.setAttribute("href", url);
-        var head = document.getElementsByTagName('head')[0];
-        sheet.onload = sheet.onreadystatechange = function(){
-            if (!this.readyState || this.readyState == 'loaded' || this.readyState == 'complete') {
-                if (typeof(callback) ==='function') {
-                    callback();
-                }
-                sheet.onload = sheet.onreadystatechange = null;
-            }
-            return true;
-        };
-        head.appendChild(sheet);
-        return false;
-    };
-
     context.getEventTarget = function (event) {
         return event.target ? event.target : ((event.currentTarget) ? event.currentTarget : event.srcElement);
     };
-
-
-
-    /**
-     * Only do anything if jQuery isn't defined
-     */
-    if (typeof jQuery == 'undefined') {
-        // //ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js
-        if (!addScript(getSiteURL(true) + 'jquery-1.12.1.min.js', function() {
-            if (typeof jQuery=='undefined') {
-                console.log('Could not connect to googleapis');
-            }
-            else {
-                console.log('Automatically loaded jquery');
-            }
-        })) {
-            context.addScript('//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js');
-        }
-    }
-
 
     /**
      * Creates a new guid
@@ -1580,6 +1406,7 @@ function JSLib() {
      * @returns {*} the dataArray, but with more elements
      */
     context.getValuesByClassToFormData = function (classOfInputs) {
+        if (!context.isJqueryLoaded){return null;}
         var formData = null;
         try {
             formData = new FormData();
@@ -1726,115 +1553,359 @@ function JSLib() {
         var second = parseInt(shs[2]);
         return intMonthToWord(month-1) + ' ' + day + ', ' + year;
     };
+
+
+    context.load_jQueryEnhancements = function(){
+
+        if (context.isJqueryLoaded) {return;}
+        /**
+         * Submit a form using ajax
+         */
+        $.fn.formSubmit = function(options) {
+            var formObj = $(this);
+            var formURL = formObj.attr("action");
+            var formMethod = formObj.attr("method");
+            if (typeof(formMethod)=='undefined' || formMethod==null){
+                formMethod = 'POST';
+            }
+            if (typeof(window.FormData) !== 'undefined') {
+                // for HTML5 browsers
+                var formData = new FormData(formObj);
+                $(this).find("input:file").each(function(index, element){
+                    for (var ind in element.files) {
+                        formData.append("files[]", element.files[ind]);
+                    }
+                });
+
+                var requestOptions = {
+                    url: formURL,
+                    type: formMethod,
+                    data: formData,
+                    mimeType: "multipart/form-data",
+                    contentType: false,
+                    cache: false,
+                    processData: false,
+                    dataType: 'json'
+                };
+                var request = $.ajax(requestOptions);
+                request.always(function(data, textStatus, xhr) {
+                    var response = data;
+                    if (typeof(xhr)!='undefined') {
+                        if (typeof(xhr.status)!='undefined') {
+                            if (typeof(xhr.responseText)!='undefined') {
+                                response = xhr;
+                            }
+                        }
+                    }
+                    if (typeof(response.responseJSON)!='undefined') {
+                        var text = response.responseText;
+                        response= response.responseJSON;
+                        response['responseText'] = text;
+                    }
+                    if (typeof(options)!='undefined') {
+                        if (typeof(options['callback'])=='function') {
+                            options['callback'](response);
+                        }
+                    }
+                });
+            } else {
+                //for olden browsers
+                //generate a random id
+                var iframeId = 'unique' + (new Date().getTime());
+                //create an empty iframe
+                var iframe = $('<iframe src="javascript:false;" name="'+iframeId+'" />');
+                //hide it
+                iframe.hide();
+                //set form target to iframe
+                formObj.attr('target',iframeId);
+                //Add iframe to body
+                iframe.appendTo('body');
+                iframe.load(function(e) {
+                    var doc = JS.getDocFromFrame(iframe[0]);
+                    if (typeof(options)!='undefined') {
+                        if (typeof(options['callback'])!='undefined') {
+                            options['callback'](doc);
+                        }
+                    }
+                });
+            }
+        };
+
+        $.fn.makeModal = function(callback) {
+            // if the element has enough properties to make it a modal
+            if (this.length) {
+                // get the id or make one
+                var id = $(this).prop("id");
+                if (typeof(id)=='undefined' || id==null || id.toString().length<1) {
+                    var id = guid();
+                    while (document.getElementById(id)!=null) {
+                        id = guid();
+                    }
+                    $(this).prop("id", id);
+                }
+
+                // make a new modal
+                var m = new Modal();
+                m.contentId = id;
+                m.ModalDivId += m.contentId;
+                m.ModalContentId += m.contentId;
+                m.ModalBackDivId += m.contentId;
+                m.load();
+                $(window).resize(function(){
+                    m.resize();
+                });
+                if (typeof(callback)=='function') {
+                    callback();
+                }
+                return true;
+            }
+            return false;
+        };
+
+
+
+        /**
+         * Centers an element in the window
+         * @param callback -a function to run after
+         * @returns {boolean} true if successful, false if otherwise
+         */
+        $.fn.centerInWindow = function(callback) {
+            var windowHeight = $(window).minMeasuredHeight();
+            var contentHeight = $(this).maxMeasuredHeight();
+            var newMarginTop = (windowHeight - contentHeight)/3.5;
+            if (newMarginTop>1) {
+                $(this).css('margin-top',newMarginTop+"px").promise().done(function(){
+                    if (typeof(callback)=="function") {
+                        callback();
+                        return true;
+                    }
+                });
+            } else {
+                $(this).css('margin-top','').promise().done(function(){
+                    if (typeof(callback)=="function") {
+                        callback();
+                        return true;
+                    }
+                });
+            }
+        };
+
+        /**
+         * Centers an element in the parent
+         * @param callback - a function to run after
+         * @returns {boolean} true if successful, false if otherwise
+         */
+        $.fn.centerInParent = function(callback) {
+            if (this.length) {
+                var parent = $(this).parent();
+                if ( typeof(parent)=='undefined' || parent==null || $(parent).prop("tagName").toString().toLowerCase()=='body') {
+                    parent = window;
+                }
+                var windowHeight = $(parent).minMeasuredHeight();
+                var contentHeight = this.maxMeasuredHeight();
+                var newMarginTop = (windowHeight - contentHeight)/3.5;
+                if (newMarginTop>1) {
+                    $(this).css('margin-top',newMarginTop+"px").promise().done(function(){
+                        if (typeof(callback)=="function") {
+                            callback();
+                            return true;
+                        }
+                    });
+                } else {
+                    $(this).css('margin-top','').promise().done(function(){
+                        if (typeof(callback)=="function") {
+                            callback();
+                            return true;
+                        }
+                    });
+                }
+            }
+        };
+
+
+        /**
+         * Get the maximum measured height of the element
+         * @returns the maximum measured height of the element
+         */
+        $.fn.maxMeasuredHeight = function() {
+            var height = $(this).height();
+            var tempHeight = $(this).outerHeight();
+            if (tempHeight>height) {
+                height = tempHeight;
+            }
+            tempHeight = $(this).innerHeight();
+            if (tempHeight>height) {
+                height = tempHeight;
+            }
+            return height;
+        };
+
+        /**
+         * Get the minimum measured height of the element
+         * @returns the minimum measured height of the element
+         */
+        $.fn.minMeasuredHeight = function() {
+            var height = $(this).height();
+            var tempHeight = $(this).outerHeight();
+            if (tempHeight<height) {
+                height = tempHeight;
+            }
+            tempHeight = $(this).innerHeight();
+            if (tempHeight<height) {
+                height = tempHeight;
+            }
+            return height;
+        };
+
+        /**
+         * Get the maximum measured width of the element
+         * @returns the maximum measured width of the element
+         */
+        $.fn.maxMeasuredWidth = function() {
+            var width = $(this).width();
+            var tempWidth = $(this).outerWidth();
+            if (tempWidth>width) {
+                width = tempWidth;
+            }
+            tempWidth = $(this).innerWidth();
+            if (tempWidth>width) {
+                width = tempWidth;
+            }
+            return width;
+        };
+
+        /**
+         * Get the minimum measured width of the element
+         * @returns the minimum measured width of the element
+         */
+        $.fn.minMeasuredWidth = function() {
+            var width = $(this).width();
+            var tempWidth = $(this).outerWidth();
+            if (tempWidth<width) {
+                width = tempWidth;
+            }
+            tempWidth = $(this).innerWidth();
+            if (tempWidth<width) {
+                width = tempWidth;
+            }
+            return width;
+        };
+
+        /**
+         * This function uses jQuery to make a removal of a result look good.
+         */
+        $.fn.removeResult = function(callback) {
+            $(this).animate({opacity: '0'}, {
+                duration: 420,
+                complete: function () {
+                    $(this).css('height',$(this).height()).promise().done(function(){
+                        $(this).css('min-width','0').promise().done(function(){
+                            $(this).css('overflow-x','hidden').promise().done(function(){
+                                $(this).css('overflow-y','hidden').promise().done(function(){
+                                    $(this).css('overflow','hidden').promise().done(function(){
+                                        $(this).css('opacity', '0').promise().done(function(){
+                                            $(this).animate({width: '0px'}, {
+                                                duration: 260,
+                                                complete: function () {
+                                                    $(this).remove().promise().done(function(){
+                                                        if (typeof(callback)=='function') {
+                                                            callback();
+                                                        }
+                                                    });
+                                                }
+                                            });
+                                        });
+                                    });
+                                });
+                            });
+                        });
+                    });
+                }
+            });
+        };
+
+        /**
+         * Makes the object the full height of the window
+         * @param clip true to cut off the content, false by default to keep
+         * @returns the new height
+         */
+        $.fn.makeWindowHeight = function(clip){
+            if (typeof(clip)!='boolean'){
+                clip = false;
+            }
+            var height = $(window).maxMeasuredHeight();
+            var sh = $(this).prop('scrollHeight');
+
+            // set the height to the scroll height
+            if (!clip && sh>height) {
+                height = sh;
+            }
+
+            $(this).height(height);
+            return height;
+        };
+
+        /**
+         * Checks that it's not hidden
+         * @returns true if .hide() was ran
+         */
+        $.fn.isNoneVisible = function(){
+            if (typeof(this)=='undefined') {
+                return false;
+            }
+            if (typeof($(this).css('display'))=='undefined') {
+                return false;
+            }
+            if ($(this).css('display').toString().toLowerCase() == 'none') {
+                return true;
+            }
+            return false;
+        };
+
+        $.fn.addBackgroundImageWithFade = function(image, callback) {
+            var element = this;
+            $(element).css({
+                visibility: 'hidden',
+                opacity: 0
+            });
+            $('<img/>').attr('src', image).load(function() {
+                $(this).remove(); // prevent memory leaks
+                $(element).css('background-image', "url('"+image+"')").promise().done(function(){
+                    $(element).css({
+                        visibility: 'visible'
+                    });
+                    $(element).animate({
+                        opacity: 1
+                    }, 500);
+                });
+                if (typeof(callback)=="function") {
+                    callback();
+                }
+            });
+        };
+    };
 }
 
 var JS = new JSLib();
 
-
-/**
- * Submit a form using ajax
- */
-$.fn.formSubmit = function(options) {
-    var formObj = $(this);
-    var formURL = formObj.attr("action");
-    var formMethod = formObj.attr("method");
-    if (typeof(formMethod)=='undefined' || formMethod==null){
-        formMethod = 'POST';
-    }
-    if (typeof(window.FormData) !== 'undefined') {
-        // for HTML5 browsers
-        var formData = new FormData(formObj);
-        $(this).find("input:file").each(function(index, element){
-            for (var ind in element.files) {
-                formData.append("files[]", element.files[ind]);
-            }
-        });
-
-        var requestOptions = {
-            url: formURL,
-            type: formMethod,
-            data: formData,
-            mimeType: "multipart/form-data",
-            contentType: false,
-            cache: false,
-            processData: false,
-            dataType: 'json'
-        };
-        var request = $.ajax(requestOptions);
-        request.always(function(data, textStatus, xhr) {
-            var response = data;
-            if (typeof(xhr)!='undefined') {
-                if (typeof(xhr.status)!='undefined') {
-                    if (typeof(xhr.responseText)!='undefined') {
-                        response = xhr;
-                    }
-                }
-            }
-            if (typeof(response.responseJSON)!='undefined') {
-                var text = response.responseText;
-                response= response.responseJSON;
-                response['responseText'] = text;
-            }
-            if (typeof(options)!='undefined') {
-                if (typeof(options['callback'])=='function') {
-                    options['callback'](response);
-                }
-            }
-        });
-    } else {
-        //for olden browsers
-        //generate a random id
-        var iframeId = 'unique' + (new Date().getTime());
-        //create an empty iframe
-        var iframe = $('<iframe src="javascript:false;" name="'+iframeId+'" />');
-        //hide it
-        iframe.hide();
-        //set form target to iframe
-        formObj.attr('target',iframeId);
-        //Add iframe to body
-        iframe.appendTo('body');
-        iframe.load(function(e) {
-            var doc = JS.getDocFromFrame(iframe[0]);
-            if (typeof(options)!='undefined') {
-                if (typeof(options['callback'])!='undefined') {
-                    options['callback'](doc);
-                }
-            }
-        });
-    }
-};
-
-$.fn.makeModal = function(callback) {
-    // if the element has enough properties to make it a modal
-    if (this.length) {
-        // get the id or make one
-        var id = $(this).prop("id");
-        if (typeof(id)=='undefined' || id==null || id.toString().length<1) {
-            var id = guid();
-            while (document.getElementById(id)!=null) {
-                id = guid();
-            }
-            $(this).prop("id", id);
-        }
-
-        // make a new modal
-        var m = new Modal();
-        m.contentId = id;
-        m.ModalDivId += m.contentId;
-        m.ModalContentId += m.contentId;
-        m.ModalBackDivId += m.contentId;
-        m.load();
-        $(window).resize(function(){
-            m.resize();
-        });
-        if (typeof(callback)=='function') {
-            callback();
-        }
-        return true;
-    }
-    return false;
-};
-
-JS.imageFadeInOnLoad();
 // Add the script script!
-JS.addScript("js/HDSApplication.js");
+document.addStyleSheet("vendor/fontawesome-free/css/all.min.css", function(){
+    document.addStyleSheet("https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i", function(){
+        document.addStyleSheet("css/sb-admin-2.css", function(){
+            // Load the JS after the scripts
+            document.addScript("vendor/jquery/jquery.min.js", function(){
+                document.addScript("vendor/bootstrap/js/bootstrap.bundle.min.js", function(){
+                    document.addScript("vendor/jquery-easing/jquery.easing.min.js", function(){
+                        document.addScript("js/sb-admin-2.js", function(){
+                            document.addScript("js/DSApplication.js", function(){
+                                document.addScript("js/masa.js", function(){
+                                    console.log("loaded masa?");
+                                });
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    });
+});
